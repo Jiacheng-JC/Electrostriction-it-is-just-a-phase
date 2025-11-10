@@ -12,7 +12,7 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt 
 from lmfit import Minimizer, Parameters, report_fit
 
-
+# deriv function is to calculate the second derivative of displacement in the potential dVdx, with a damping c and sinusoidal driving force
 def deriv(X, t, F, c, omega):
     """Return the derivatives dx/dt and d2x/dt2."""
 
@@ -20,14 +20,14 @@ def deriv(X, t, F, c, omega):
     xdotdot = -dVdx(x) -c * xdot + F * np.sin(omega*t)
     return xdot, xdotdot
 
-
+# power_sin function is to calculate the amplitude of the second-order term sin^2(x) by lmfit as a function of time
 def power_sin(params, x, data):
     a1 = params['amp1']
     a2 = params['amp2']
     b2 = params['shift2']
     model = a2*(np.sin(x*omega - b2))**2  + a1 
     return model - data
-
+# solve function is to iterate the derivative of X, a list storing x and xdot, using odeint 
 def solve(tmax, dt_per_period, t_trans, x0, v0, F, c, omega):
     period = 2*np.pi/omega
     dt = 2*np.pi/omega / dt_per_period
@@ -77,7 +77,7 @@ for i in range (len(a)):
             E = np.sin(omega*t)
             
             
-            # solve x and skip the numerical unstable solutions
+            # solve x and skip the numerically unstable solutions
             try:
                 with warnings.catch_warnings(record=True) as w:
                     warnings.simplefilter("always")  # catch all warnings
@@ -129,4 +129,5 @@ for i in range (len(a)):
                 continue            
             else:    
                 asheet.append((k[j], a[i], F[m], x2, J))
+
                 aJ_list.append(J)
