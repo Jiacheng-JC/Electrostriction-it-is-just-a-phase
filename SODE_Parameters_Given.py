@@ -13,7 +13,7 @@ import warnings
 import time
 
 
-
+# deriv function is to calculate the second derivative of displacement in the potential dVdx, with a damping c and sinusoidal driving force
 def deriv(X, t, F, c, omega):
     """Return the derivatives dx/dt and d2x/dt2."""
 
@@ -21,7 +21,7 @@ def deriv(X, t, F, c, omega):
     xdotdot = -dVdx(x) -c * xdot + F * np.sin(omega*t) 
     return xdot, xdotdot
 
-
+# power_sin function is to calculate the amplitude of the second-order term sin^2(x) by lmfit as a function of time
 def power_sin(params, x, data):
     a1 = params['amp1']
     a2 = params['amp2']
@@ -36,7 +36,7 @@ def power_sin(params, x, data):
    
     return model - data
 
-
+# solve function is to iterate the derivative of X, a list storing x and xdot, using odeint 
 def solve(tmax, dt_per_period, t_trans, x0, v0, F, c, omega):
     period = 2*np.pi/omega
     dt = 2*np.pi/omega / dt_per_period
@@ -48,6 +48,8 @@ def solve(tmax, dt_per_period, t_trans, x0, v0, F, c, omega):
     idx = int(t_trans / dt)
     return t[idx:], X[idx:], dt, step
 
+
+# initial values of displacement, velocity, max time, angular frequency omega 
 x0, v0 = 0, 0
 #tmax, t_trans = 1000, 0
 omega = 1e-11*2*np.pi
@@ -69,20 +71,23 @@ start = time.time()
 E = np.sin(omega*t)
 
 
+# initial values of potential a,k
 a=-0.1
 k=4
 
-
+# initial values of driving F,c
 dVdx = lambda x: a*x**2 + k*x
 Fr, c = 0.8, 1
 Fl, c = -Fr, c
 
-
+# the electrostrictive displacement x=xr+xl
 Xr = odeint(deriv, X0, t, args=(Fr, c, omega))
 Xl = odeint(deriv, X0, t, args=(Fl, c, omega))
 xr, xrdot = Xr.T
 xl, xldot = Xl.T
 x = xr + xl
+
+# the combination of a,k,F,c may create a chaotic solution, mark it
 
 if (
     np.any(np.isnan(x)) or          # NaN values
@@ -94,6 +99,9 @@ else:
     chaotic = 0
 
 
+
+# lmfit of x(t), to obtain the amplitude of x(t), x2
+
 #parameter.append(j[i])
 params = Parameters()
 params.add('amp1', value=0)
@@ -103,10 +111,6 @@ params.add('amp2', value=0.35)
 params.add('shift2', value=0)
 #params.add('shift4', value=0)
 #params.add('shift6', value=0)
-
-
-
-
 
 minner = Minimizer(power_sin, params, fcn_args=(t[-200:],x[-200:]))
 result = minner.minimize()
@@ -123,13 +127,13 @@ print(f"TSS = {tss:.1f}")
 
 print(f"R² = {1 - rss/tss:.3f}")
 
-
+# J constant
 J = -x2*k**3/(a*Fr**2)
 
 
 print(x2, J)
 
-
+# Plotting
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 ax1.yaxis.get_major_formatter().set_powerlimits((0,1))
@@ -141,6 +145,7 @@ plt.show()
 
 
 plt.plot(E[-200:],x[-200:])
+
 
 
 
